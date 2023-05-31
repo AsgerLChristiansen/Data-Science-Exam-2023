@@ -1,0 +1,369 @@
+---
+title: "Gun Violence sim and parameter recovery"
+author: "Asger"
+date: "2023-05-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(pacman, tidyverse, stringr, posterior, cmdstanr)
+source("Gun Violence Functions.R")
+
+```
+
+
+
+```{r Data Exploration to find sensible priors}
+
+homicide_data = read_csv("Cleaned Data/homicide_data_by_month.csv")
+du_data = read_csv("Cleaned Data/du_data_by_month.csv")
+
+# We will now derive a few descriptive statistics of the data, to set sensible
+#priors.
+mean(c(homicide_data$killed_per_capita)) # mean is 2.69
+range(homicide_data$killed_per_capita) # range is 0 to 11.54
+
+
+# For the homicide data, we're operating on a scale where a trend of 2-3 is certainly possible
+# A lower trend might be something like 0.5, and a trend can even be negative.
+
+# What about the intercept? That is, what prior might we set for number of homicides in january 2014?
+
+a = homicide_data[homicide_data$year == 2014 & homicide_data$month == 1,]
+
+mean(a$killed_per_capita) # 2.14 in the first month of 2014
+range(a$killed_per_capita) # 0 to 6.8.
+
+# So the mean alpha will have to be somewhere around 2-3, with reasonable certainty.
+
+mean_alpha_prior = c(2, 0.5)
+
+mean_beta_prior = c(1,1)
+
+# So, we know from the RAND corporation study (Smart et al. 2023) that there should be an effect.
+# Skeptical priors with large uncertainties seems appropriate.
+
+delta_alpha_prior = c(0.5, 2) # 2 SD's away is 3.5/2 below the assumed mean, which seems appropriate.
+delta_beta_prior = c(1, 2) # Trend might be reasonably large.
+
+SD_alpha_prior = c(2,2)
+SD_beta_prior = c(2,2)
+sigma_prior = c(2,2)
+
+mean(rgamma(2,2, n= 1000)) # This gives a mean SD of 1, allowing states to vary quite a lot.
+
+### Same exercise for the other data.
+
+du_data$victims_per_capita = du_data$killed_per_capita + du_data$injured_per_capita
+
+mean(c(du_data$victims_per_capita)) # mean is 0.28
+range(du_data$victims_per_capita) # range is 0 to 5.4. Much smaller values here.
+
+
+a = du_data[du_data$year == 2014 & du_data$month == 1,]
+
+mean(a$victims_per_capita) # 0.18
+range(a$victims_per_capita) # 0 to 1.8.
+
+
+# This, then, will inform the prior choices for our various models.
+# See the stan code or the report for the exact priors chosen.
+```
+
+```{r Simulations and parameter recovery}
+
+p_load(cmdstanr, posterior)
+
+file_homicide <- file.path("Stan Code/multilevel_regression_model_homicide.stan")
+
+mod_homicide <- cmdstan_model(file_homicide,
+                     cpp_options= list(stan_threads= TRUE),stanc_options= list("O1"))
+
+file_du <- file.path("Stan Code/multilevel_regression_model_du.stan")
+
+mod_du <- cmdstan_model(file_du,
+                     cpp_options= list(stan_threads= TRUE),stanc_options= list("O1"))
+
+
+####### Homicide parameter recovery
+mu_alpha_vec = seq(0, 4, 0.2)
+mu_beta_vec = seq(-0.5, 3, 0.5)
+delta_alpha_vec = seq(-2, 2, .5)
+delta_beta_vec = seq(-1, 3, .5)
+SD_alpha_vec = seq(0.2, 2, 0.2)
+SD_beta_vec = seq(0.2, 2, 0.2)
+SD_state = c(1,1)
+
+
+n_states_1_vec = c(30)
+n_states_2_vec = c(18)
+n_months = 48
+n_sims = 20
+set.seed(1337)
+
+recovery_df = parameter_recovery(mu_alpha_vec, mu_beta_vec, delta_alpha_vec, delta_beta_vec, SD_alpha_vec, SD_beta_vec, SD_state, n_states_1_vec, n_states_2_vec, n_months = n_months, n_sims = n_sims, mod = mod_homicide)
+
+# du parameter recovery
+n_states_1_vec = c(30)
+n_states_2_vec = c(18)
+n_months = 48
+n_sims = 20
+mu_alpha_vec = seq(0, 1, 0.1)
+mu_beta_vec = seq(-0.5, 2, 0.2)
+delta_alpha_vec = seq(-1, 2, .2)
+delta_beta_vec = seq(-1, 2, .2)
+SD_alpha_vec = seq(0.2, 2, 0.2)
+SD_beta_vec = seq(0.2, 2, 0.2)
+SD_state = c(1,1)
+
+
+set.seed(1337)
+recovery_df_du = parameter_recovery(mu_alpha_vec, mu_beta_vec, delta_alpha_vec, delta_beta_vec, SD_alpha_vec, SD_beta_vec, SD_state, n_states_1_vec, n_states_2_vec, n_months = n_months, n_sims = n_sims, mod = mod_du)
+
+
+write_csv(recovery_df, "Out/parameter_recovery_homicide_1.csv")
+write_csv(recovery_df_du, "Out/parameter_recovery_du_1.csv")
+
+```
+
+
+
+```{r Analysis}
+
+# Parameter recovery was acceptable. Now for the analysis itself.
+
+homicide_data = read_csv("Cleaned Data/homicide_data_by_month.csv")
+du_data = read_csv("Cleaned Data/du_data_by_month.csv")
+
+p_load(cmdstanr, posterior)
+
+file_homicide <- file.path("Stan Code/multilevel_regression_model_homicide.stan")
+
+mod_homicide <- cmdstan_model(file_homicide,
+                     cpp_options= list(stan_threads= TRUE),stanc_options= list("O1"))
+
+
+file_du <- file.path("Stan Code/multilevel_regression_model_du.stan")
+
+mod_du <- cmdstan_model(file_du,
+                     cpp_options= list(stan_threads= TRUE),stanc_options= list("O1"))
+
+no_SYG_list = c("Connecticut", "Delaware", "Hawaii", "Idaho", "Maine", "Maryland","Massachusetts",
+                    "Minnesota", "Arkansas", "North Dakota", "Nebraska",
+                    "New York", "New Jersey", "Ohio", "Rhode Island", "South Dakota",
+                    "Wisconsin", "Wyoming")
+homicide_data$group = NA
+du_data$group = NA
+
+for (i in 1:nrow(homicide_data)){
+  if (homicide_data$state[i] %in% no_SYG_list){
+  homicide_data$group[i] = 2
+  }
+  else{
+    homicide_data$group[i] = 1 
+  }
+  
+}
+
+for (i in 1:nrow(du_data)){
+  if (du_data$state[i] %in% no_SYG_list){
+  du_data$group[i] = 2}
+  else{
+    du_data$group[i] = 1 
+  }
+  
+}
+
+du_data = du_data %>% filter(state != "Iowa") %>% filter(state != "Missouri")
+du_data$victims_per_capita = du_data$killed_per_capita + du_data$injured_per_capita
+
+homicide_data = homicide_data %>% filter(state != "Iowa") %>% filter(state != "Missouri")
+
+length(unique(homicide_data$state))
+
+
+### Analysis: Overall homicide rate
+
+analysis_homicide = data.frame(state = homicide_data$state, year = homicide_data$year, month = homicide_data$month, y = homicide_data$killed_per_capita, group = homicide_data$group)
+
+n_months = 48
+n_states_1 = 30
+n_states_2 = 18
+
+set.seed(1337)
+analysis_homicide_samples = fit_to_data(analysis_homicide,n_states_1, n_states_2,n_months, mod_homicide)
+
+
+draws_df <- as_draws_df(analysis_homicide_samples$draws())
+write_csv(draws_df, "Out/homicide_analysis_draws_1.csv")
+
+summary = analysis_homicide_samples$summary()
+write_csv(summary, "Out/analysis_homicide_results_summary_1.csv")
+
+### Analysis: Defensive Use
+
+analysis_du = data.frame(state = du_data$state, year = du_data$year, month = du_data$month, y = du_data$victims_per_capita, group = du_data$group)
+
+n_months = 48
+n_states_1 = 30
+n_states_2 = 18
+
+
+set.seed(1337)
+defensive_use_samples = fit_to_data(analysis_du,n_states_1, n_states_2,n_months, mod_du)
+
+draws_df <- as_draws_df(defensive_use_samples$draws())
+write_csv(draws_df, "Out/defensive_use_analysis_draws_1.csv")
+
+summary = defensive_use_samples$summary()
+write_csv(summary, "Out/defensive_use_results_summary_1.csv")
+
+```
+
+
+
+```{r}
+pacman::p_load(pacman, cmdstanr, posterior)
+
+# And now for Missouri and Iowa
+
+iowa_homicide_data = read_csv("Cleaned Data/homicide_data_by_month.csv") %>% filter(state == "Iowa")
+missouri_homicide_data = read_csv("Cleaned Data/homicide_data_by_month.csv") %>% filter(state == "Missouri")
+
+iowa_du_data = read_csv("Cleaned Data/du_data_by_month.csv") %>% filter(state == "Iowa")
+missouri_du_data = read_csv("Cleaned Data/du_data_by_month.csv") %>% filter(state == "Missouri")
+
+iowa_du_data$syg_dummy = 0
+iowa_homicide_data$syg_dummy = 0
+iowa_du_data$syg_dummy[43:48] = 1
+iowa_homicide_data$syg_dummy[43:48] = 1
+
+# July 1st 2017 corresponds to month nr. 43.
+
+missouri_du_data$syg_dummy = 0
+missouri_homicide_data$syg_dummy = 0
+missouri_du_data$syg_dummy[29:48] = 1
+missouri_homicide_data$syg_dummy[29:48] = 1
+
+# May 13th 2016, corresponds to month nr. 29.
+
+```
+
+
+```{r Analysing Iowa}
+### ANALYSING IOWA
+
+file <- file.path("Stan Code/basic_regression_model.stan")
+
+mod_basic <- cmdstan_model(file,
+                     cpp_options= list(stan_threads= TRUE),stanc_options= list("O1"))
+
+X = iowa_homicide_data %>% select(month, syg_dummy) %>% as.matrix()
+
+data <- list(N = 48, y = iowa_homicide_data$killed_per_capita, X = X)
+
+set.seed(1337)
+samples <- mod_basic$sample(
+  data = data,
+  seed = 1000,
+  chains = 1,
+  parallel_chains = 1,
+  threads_per_chain = 1,
+  iter_warmup = 1000,
+  iter_sampling = 2000,
+  refresh = 0,
+  max_treedepth = 20,
+  adapt_delta = 0.99,)
+
+draws_df <- as_draws_df(samples$draws())
+
+    
+summary = samples$summary()
+
+write_csv(draws_df, "Out/iowa_homicide_results_draws.csv")
+write_csv(summary, "Out/iowa_homicide_results_samples.csv")
+
+X = iowa_du_data %>% select(month, syg_dummy) %>% as.matrix()
+iowa_du_data$victims_per_capita = iowa_du_data$injured_per_capita + iowa_du_data$killed_per_capita
+data <- list(N = 48, y = iowa_du_data$victims_per_capita, X = X)
+
+set.seed(1337)
+samples <- mod_basic$sample(
+  data = data,
+  seed = 1000,
+  chains = 1,
+  parallel_chains = 1,
+  threads_per_chain = 1,
+  iter_warmup = 1000,
+  iter_sampling = 2000,
+  refresh = 0,
+  max_treedepth = 20,
+  adapt_delta = 0.99,)
+
+
+draws_df <- as_draws_df(samples$draws())
+write_csv(draws_df, "Out/iowa_du_results_draws.csv")
+    
+summary = samples$summary()
+write_csv(summary, "Out/iowa_du_results_summary.csv")
+```
+
+
+```{r Analysing Missouri}
+## ANALYSING MISSOURI
+
+file <- file.path("Stan Code/basic_regression_model.stan")
+
+mod_basic <- cmdstan_model(file,
+                     cpp_options= list(stan_threads= TRUE),stanc_options= list("O1"))
+
+X = missouri_homicide_data %>% select(month, syg_dummy) %>% as.matrix()
+
+data <- list(N = 48, y = missouri_homicide_data$killed_per_capita, X = X)
+
+set.seed(1337)
+samples <- mod_basic$sample(
+  data = data,
+  seed = 1000,
+  chains = 1,
+  parallel_chains = 1,
+  threads_per_chain = 1,
+  iter_warmup = 1000,
+  iter_sampling = 2000,
+  refresh = 0,
+  max_treedepth = 20,
+  adapt_delta = 0.99,)
+
+
+draws_df <- as_draws_df(samples$draws())
+write_csv(draws_df, "Out/missouri_homicide_results_draws.csv")
+    
+summary = samples$summary()
+write_csv(summary, "Out/missouri_homicide_results_summary.csv")
+# missouri, July 1st 2017
+# Missouri (Seemingly may 13th, 2016)
+
+X = missouri_du_data %>% select(month, syg_dummy) %>% as.matrix()
+missouri_du_data$victims_per_capita = missouri_du_data$injured_per_capita + missouri_du_data$killed_per_capita
+data <- list(N = 48, y = missouri_du_data$victims_per_capita, X = X)
+
+set.seed(1337)
+samples <- mod_basic$sample(
+  data = data,
+  seed = 1000,
+  chains = 1,
+  parallel_chains = 1,
+  threads_per_chain = 1,
+  iter_warmup = 1000,
+  iter_sampling = 2000,
+  refresh = 0,
+  max_treedepth = 20,
+  adapt_delta = 0.99,)
+
+draws_df <- as_draws_df(samples$draws())
+write_csv(draws_df, "Out/missouri_du_results_draws.csv")
+    
+summary = samples$summary()
+write_csv(summary, "Out/missouri_du_results_summary.csv")
+```

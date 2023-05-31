@@ -1,0 +1,362 @@
+---
+title: "Plotting"
+author: "Asger"
+date: "2023-05-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+pacman::p_load(pacman, tidyverse, ggplot2)
+
+# Not much to explain here. The following script produces, quite simply,
+# plots of the various results, which should be identical to those used in the report.
+# If this is not the case, I have been inconsistent with my seeds, in which case I apologize.
+```
+
+```{r Missouri Results Plots}
+
+draws_df = read_csv("Out/missouri_du_results_draws.csv")
+ggplot(draws_df) +
+  geom_density(aes(alpha), fill = "blue", alpha = 0.3) +
+  geom_density(aes(alpha_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Alpha") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/missouri_du_alpha.png")
+
+
+
+ggplot(draws_df) +
+  geom_density(aes(beta), fill = "blue", alpha = 0.3) +
+  geom_density(aes(beta_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Beta") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/missouri_du_beta.png")
+
+
+ggplot(draws_df) +
+  geom_density(aes(gamma), fill = "blue", alpha = 0.3) +
+  geom_density(aes(sigma_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Gamma") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/missouri_du_gamma.png")
+
+
+draws_df = read_csv("Out/missouri_homicide_results_draws.csv")
+
+ggplot(draws_df) +
+  geom_density(aes(alpha), fill = "blue", alpha = 0.3) +
+  geom_density(aes(alpha_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Alpha") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/missouri_homicide_alpha.png")
+
+
+
+ggplot(draws_df) +
+  geom_density(aes(beta), fill = "blue", alpha = 0.3) +
+  geom_density(aes(beta_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Beta") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/missouri_homicide_beta.png")
+
+
+ggplot(draws_df) +
+  geom_density(aes(gamma), fill = "blue", alpha = 0.3) +
+  geom_density(aes(sigma_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Gamma") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/missouri_homicide_gamma.png")
+```
+
+```{r Iowa Results Plots}
+
+draws_df = read_csv("Out/iowa_du_results_draws.csv")
+
+ggplot(draws_df) +
+  geom_density(aes(alpha), fill = "blue", alpha = 0.3) +
+  geom_density(aes(alpha_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Alpha") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/iowa_du_alpha.png")
+
+
+
+ggplot(draws_df) +
+  geom_density(aes(beta), fill = "blue", alpha = 0.3) +
+  geom_density(aes(beta_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Beta") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/iowa_du_beta.png")
+
+
+ggplot(draws_df) +
+  geom_density(aes(gamma), fill = "blue", alpha = 0.3) +
+  geom_density(aes(sigma_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Gamma") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/iowa_du_gamma.png")
+
+
+draws_df = read_csv("Out/iowa_homicide_results_draws.csv")
+
+ggplot(draws_df) +
+  geom_density(aes(alpha), fill = "blue", alpha = 0.3) +
+  geom_density(aes(alpha_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Alpha") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/iowa_homicide_alpha.png")
+
+
+
+ggplot(draws_df) +
+  geom_density(aes(beta), fill = "blue", alpha = 0.3) +
+  geom_density(aes(beta_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Beta") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/iowa_homicide_beta.png")
+
+
+ggplot(draws_df) +
+  geom_density(aes(gamma), fill = "blue", alpha = 0.3) +
+  geom_density(aes(sigma_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Gamma") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/iowa_homicide_gamma.png")
+```
+
+
+
+```{r Defensive Use Results Plots}
+
+draws_df = read_csv("Out/defensive_use_analysis_draws_1.csv")
+
+ggplot(draws_df) +
+  geom_density(aes(mu_alpha), fill = "blue", alpha = 0.3) +
+  geom_density(aes(mu_alpha_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Mean Alpha") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/defensive_use_mu_alpha.png")
+
+
+ggplot(draws_df) +
+  geom_density(aes(mu_beta), fill = "blue", alpha = 0.3) +
+  geom_density(aes(mu_beta_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Mean Beta") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/defensive_use_mu_beta.png")
+
+
+ggplot(draws_df) +
+  geom_density(aes(delta_alpha), fill = "blue", alpha = 0.3) +
+  geom_density(aes(delta_alpha_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Delta-Alpha") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/defensive_use_delta_alpha.png")
+
+ggplot(draws_df) +
+  geom_density(aes(delta_beta), fill = "blue", alpha = 0.3) +
+  geom_density(aes(delta_beta_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Delta-Beta") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/defensive_use_delta_beta.png")
+
+```
+
+```{r Homicide Results plots}
+
+draws_df = read_csv("Out/homicide_analysis_draws_1.csv")
+
+
+ggplot(draws_df) +
+  geom_density(aes(mu_alpha), fill = "blue", alpha = 0.3) +
+  geom_density(aes(mu_alpha_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Mean Alpha") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/homicide_mu_alpha.png")
+
+
+ggplot(draws_df) +
+  geom_density(aes(mu_beta), fill = "blue", alpha = 0.3) +
+  geom_density(aes(mu_beta_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Mean Beta") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/homicide_mu_beta.png")
+
+
+ggplot(draws_df) +
+  geom_density(aes(delta_alpha), fill = "blue", alpha = 0.3) +
+  geom_density(aes(delta_alpha_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Delta-Alpha") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/homicide_delta_alpha.png")
+
+ggplot(draws_df) +
+  geom_density(aes(delta_beta), fill = "blue", alpha = 0.3) +
+  geom_density(aes(delta_beta_prior), fill = "red", alpha = 0.3) +
+  geom_vline(xintercept = 0, size = 2) +
+  xlab("Delta-Beta") +
+  ylab("Posterior Density") +
+  theme_classic()
+ggsave("Plots/homicide_delta_beta.png")
+
+```
+
+
+```{r Plotting parameter recovery}
+
+
+homicide = read_csv("Out/parameter_recovery_homicide_1.csv")
+du = read_csv("Out/parameter_recovery_du_1.csv")
+
+ggplot(homicide) + geom_point(aes(mu_alpha_true, mu_alpha_est)) + geom_smooth(aes(mu_alpha_true, mu_alpha_est),method = "lm")+
+  xlab("True Mean Alpha (homicide)") +
+  ylab("Estimated Mean Alpha (homicide)") +
+  theme_classic()
+ggsave("Plots/mu_alpha_homicide_recovery.png")
+
+
+ggplot(homicide) + geom_point(aes(mu_beta_true, mu_beta_est)) + geom_smooth(aes(mu_beta_true, mu_beta_est),method = "lm")+
+  xlab("True Mean Beta (homicide)") +
+  ylab("Estimated Mean Beta (homicide)") +
+  theme_classic()
+ggsave("Plots/mu_beta_homicide_recovery.png")
+
+
+
+ggplot(homicide) + geom_point(aes(delta_alpha_true, delta_alpha_est)) + geom_smooth(aes(delta_alpha_true, delta_alpha_est),method = "lm")+
+  xlab("True Delta Alpha (homicide)") +
+  ylab("Estimated Delta Alpha (homicide)") +
+  theme_classic()
+ggsave("Plots/delta_alpha_homicide_recovery.png")
+
+
+ggplot(homicide) + geom_point(aes(delta_beta_true, delta_beta_est)) + geom_smooth(aes(delta_beta_true, delta_beta_est),method = "lm")+
+  xlab("True Delta Beta (homicide)") +
+  ylab("Estimated Delta Beta (homicide)") +
+  theme_classic()
+ggsave("Plots/delta_beta_homicide_recovery.png")
+
+
+
+ggplot(homicide) + geom_point(aes(SD_alpha_true, SD_alpha_1_est)) + geom_smooth(aes(SD_alpha_true, SD_alpha_1_est),method = "lm")+
+  xlab("True SD Alpha (homicide)") +
+  ylab("Estimated SD Alpha for SYG states (homicide)") +
+  theme_classic()
+ggsave("Plots/SD_alpha_1_homicide_recovery.png")
+
+ggplot(homicide) + geom_point(aes(SD_alpha_true, SD_alpha_2_est)) + geom_smooth(aes(SD_alpha_true, SD_alpha_2_est),method = "lm")+
+  xlab("True SD Alpha (homicide)") +
+  ylab("Estimated SD Alpha for duty to retreat states (homicide)") +
+  theme_classic()
+ggsave("Plots/SD_alpha_2_homicide_recovery.png")
+
+
+
+ggplot(homicide) + geom_point(aes(SD_beta_true, SD_beta_1_est)) + geom_smooth(aes(SD_beta_true, SD_beta_1_est),method = "lm")+
+  xlab("True SD Beta (homicide)") +
+  ylab("Estimated SD Beta for SYG states (homicide)") +
+  theme_classic()
+ggsave("Plots/SD_beta_1_homicide_recovery.png")
+
+ggplot(homicide) + geom_point(aes(SD_beta_true, SD_beta_2_est)) + geom_smooth(aes(SD_beta_true, SD_beta_2_est),method = "lm")+
+  xlab("True SD Beta (homicide)") +
+  ylab("Estimated SD Beta for duty to retreat states (homicide)") +
+  theme_classic()
+ggsave("Plots/SD_beta_2_homicide_recovery.png")
+
+ggplot(du) + geom_point(aes(mu_alpha_true, mu_alpha_est)) + geom_smooth(aes(mu_alpha_true, mu_alpha_est),method = "lm")+
+  xlab("True Mean Alpha (defensive use)") +
+  ylab("Estimated Mean Alpha (defensive use)") +
+  theme_classic()
+ggsave("Plots/mu_alpha_du_recovery.png")
+
+
+ggplot(du) + geom_point(aes(mu_beta_true, mu_beta_est)) + geom_smooth(aes(mu_beta_true, mu_beta_est),method = "lm")+
+  xlab("True Mean Beta (defensive use)") +
+  ylab("Estimated Mean Beta (defensive use)") +
+  theme_classic()
+ggsave("Plots/mu_beta_du_recovery.png")
+
+
+
+ggplot(du) + geom_point(aes(delta_alpha_true, delta_alpha_est)) + geom_smooth(aes(delta_alpha_true, delta_alpha_est),method = "lm")+
+  xlab("True Delta Alpha (defensive use)") +
+  ylab("Estimated Delta Alpha (defensive use)") +
+  theme_classic()
+ggsave("Plots/delta_alpha_du_recovery.png")
+
+
+ggplot(du) + geom_point(aes(delta_beta_true, delta_beta_est)) + geom_smooth(aes(delta_beta_true, delta_beta_est),method = "lm")+
+  xlab("True Delta Beta (defensive use)") +
+  ylab("Estimated Delta Beta (defensive use)") +
+  theme_classic()
+ggsave("Plots/delta_beta_du_recovery.png")
+
+
+
+ggplot(du) + geom_point(aes(SD_alpha_true, SD_alpha_1_est)) + geom_smooth(aes(SD_alpha_true, SD_alpha_1_est),method = "lm")+
+  xlab("True SD Alpha (defensive use)") +
+  ylab("Estimated SD Alpha for SYG states (defensive use)") +
+  theme_classic()
+ggsave("Plots/SD_alpha_1_du_recovery.png")
+
+ggplot(du) + geom_point(aes(SD_alpha_true, SD_alpha_2_est)) + geom_smooth(aes(SD_alpha_true, SD_alpha_2_est),method = "lm")+
+  xlab("True SD Alpha (du)") +
+  ylab("Estimated SD Alpha for duty to retreat states (defensive use)") +
+  theme_classic()
+ggsave("Plots/SD_alpha_2_du_recovery.png")
+
+ggplot(du) + geom_point(aes(SD_beta_true, SD_beta_1_est)) + geom_smooth(aes(SD_beta_true, SD_beta_1_est),method = "lm")+
+  xlab("True SD Beta (defensive use)") +
+  ylab("Estimated SD Beta for SYG states (defensive use)") +
+  theme_classic()
+ggsave("Plots/SD_beta_1_du_recovery.png")
+
+ggplot(du) + geom_point(aes(SD_beta_true, SD_beta_2_est)) + geom_smooth(aes(SD_beta_true, SD_beta_2_est),method = "lm")+
+  xlab("True SD Beta (defensive use)") +
+  ylab("Estimated SD Beta for duty to retreat states (defensive use)") +
+  theme_classic()
+ggsave("Plots/SD_beta_2_du_recovery.png")
+
+
+```

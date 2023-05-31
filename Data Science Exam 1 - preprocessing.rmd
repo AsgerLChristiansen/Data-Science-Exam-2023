@@ -1,0 +1,242 @@
+---
+title: "Data Science Exam 1 - Gun Violence Preprocessing"
+author: "Asger"
+date: "2023-04-24"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("C:/Users/alakk/Desktop/gun violence")
+
+### This notebook is the FIRST notebook, and should be run from start to finish FIRST.
+
+## Load packages
+pacman::p_load(pacman, tidyverse, stringr)
+
+## Load raw data
+gun_violence_raw = read_csv("gun-violence-data_01-2013_03-2018.csv")
+
+## Load population data
+pop_data = read_csv("Pop Data/state_pop_2013_2019.csv")
+
+
+## Load sources
+source("Gun Violence Functions.R")
+
+```
+
+
+```{r Preprocessing - filter by labels}
+
+# The incident_characteristics column in the raw dataset is, to put it mildly,
+# messy. (Go have a look at it!) All the labels are in single strings.
+# To make sense of all this, I've had to juggle a number of different data formats.
+# split_strings_list() creates a list of label vectors for each incidents.
+# unique_labels_counter() takes said list and counts how many instances of each
+# label there is.
+# labels_by_ID() turns the list of label vectors into a (still quite messy) dataframe,
+# which in some cases is easier to work with.
+
+# Let's preprocess the raw data.
+split_strings_list = split_strings_and_list(gun_violence_raw)
+labelled_dataframe = labels_by_ID(split_strings_list)
+unique_labels_total = unique_labels_counter(split_strings_list)
+
+
+# And let's save our work so we don't have to do that again
+write_csv(labelled_dataframe, "Temp/labelled_dataframe.csv")
+write_csv(unique_labels_total, "Temp/unique_counted_labels_total.csv")
+
+```
+
+```{r Quick data exploration before further preprocessing}
+
+unique_labels_total = read_csv("Temp/unique_counted_labels_total.csv")
+labelled_dataframe = read_csv("Temp/labelled_dataframe.csv")
+
+### Quick data exploration: How many data points remain when filtering
+# for "Shot - Dead", and filtering out officer involved shootings and suicides?
+homicide = filter_incidents_by_labels(labelled_dataframe, labels_included = c("Shot - Dead (murder, accidental, suicide)"), labels_excluded =c("Officer Involved Shooting - subject/suspect/perpetrator killed", "Suicide^") )
+
+gun_violence_homicide = gun_violence_raw %>% filter(incident_id %in% homicide$V1)
+
+write_csv(gun_violence_homicide, "Temp/homicide_data.csv")
+
+# Looking at the amount of unique labels for the shot dead category (to compare with the total data)
+split_strings_list = split_strings_and_list(gun_violence_homicide)
+unique_labels_homicide = unique_labels_counter(split_strings_list)
+
+write_csv(unique_labels_homicide, "Temp/counted_labels_homicide.csv")
+
+# How many casualties have been removed as a result of this filtering?
+sum(gun_violence_raw$n_killed) # 60468
+sum(gun_violence_homicide$n_killed) # 59794
+
+# That's an acceptable difference.
+
+
+## Now we have to filter for all the Defensive Use labels. In this case, we wont use any excluding labels.
+
+included_du = c(
+  "Defensive Use","Defensive Use - Crime occurs, victim shoots subject/suspect/perpetrator","Defensive Use - Good Samaritan/Third Party","Defensive use - No shots fired","Defensive Use - Shots fired, no injury/death"
+,"Defensive Use - Stand Your Ground/Castle Doctrine established", "Defensive Use - Victim stops crime"
+  )
+
+# As before, we take a look at the unique labels in this data.
+defensive_use = filter_incidents_by_labels(labelled_dataframe, labels_included = included_du)
+defensive_data = gun_violence_raw %>% filter(incident_id %in% defensive_use$V1)
+
+split_strings_list = split_strings_and_list(defensive_data)
+uniques_d = unique_labels_counter(split_strings_list)
+
+
+write_csv(uniques_d, "Temp/unique_counted_labels_defensive_use.csv")
+
+# About a third of the observations are also home invasions.
+# Considering that the castle doctrine is included in nearly all states, we
+# want to exclude these data points.
+# That leaves 5058 data points. Or about 100 per state. Not great, not terrible.
+
+home_inv_labels = c(
+  "Home Invasion - subject/suspect/perpetrator killed","Home Invasion - subject/suspect/perpetrator injured",
+  "Home Invasion - Resident killed",
+  "Home Invasion - Resident injured",
+  "Home Invasion - No death or injury",
+"Home Invasion"
+  
+)
+
+defensive_use_minus_home_invasions = filter_incidents_by_labels(defensive_use, labels_included = included_du, labels_excluded =home_inv_labels)
+
+defensive_data_minus_home_invasions = gun_violence_raw %>% filter(incident_id %in% defensive_use_minus_home_invasions$V1)
+
+# Check the unique label count again
+split_strings_list = split_strings_and_list(defensive_data_minus_home_invasions)
+uniques_d_h = unique_labels_counter(split_strings_list)
+
+# Acceptable. Save this as well.
+write_csv(uniques_d_h, "Temp/unique_counted_labels_defensive_use_minus_home_invasions.csv")
+
+# With all of those diagnostics out of the way, let's save the actual filtered data.
+write_csv(defensive_data_minus_home_invasions, "Temp/defensive_data_minus_home_invasions.csv")
+write_csv(defensive_data, "Temp/defensive_data.csv")
+```
+
+
+
+```{r Preprocessing 2 - format data}
+
+# Now that we have reduced the size of the datasets we're working with, we can
+# begin adding additional columns and formatting the existing data
+# to produce our predictors.
+
+source("Gun Violence Functions.R")
+
+pacman::p_load(pacman, tidyverse, stringr)
+
+gun_violence_homicide = read_csv("Temp/homicide_data.csv")
+gun_violence_du = read_csv("Temp/defensive_data_minus_home_invasions.csv")
+
+pop_data = read_csv("Pop Data/state_pop_2013_2019.csv")
+
+state_list = unique(gun_violence_du$state)
+
+
+gun_violence_homicide = read_csv("Temp/homicide_data.csv")
+gun_violence_du = read_csv("Temp/defensive_data_minus_home_invasions.csv")
+
+
+
+homicide_data_year = format_data_by_year(gun_violence_homicide, state_list)
+homicide_data_year = homicide_data_year %>% remove_bad_data()
+homicide_data_month = format_data_by_month(gun_violence_homicide, state_list)
+homicide_data_month = homicide_data_month %>% remove_bad_data()
+
+write_csv(homicide_data_year, "Cleaned Data/homicide_data_by_year.csv")
+write_csv(homicide_data_month, "Cleaned Data/homicide_data_by_month.csv")
+homicide_data_year = read_csv("Cleaned Data/homicide_data_by_year.csv")
+homicide_data_month = read_csv("Cleaned Data/homicide_data_by_month.csv")
+
+
+defensive_use_data_year = format_data_by_year(gun_violence_du, state_list) 
+defensive_use_data_year = defensive_use_data_year %>% remove_bad_data()
+defensive_use_data_month = format_data_by_month(gun_violence_du, state_list) 
+defensive_use_data_month = defensive_use_data_month %>% remove_bad_data()
+
+write_csv(defensive_use_data_year, "Cleaned Data/du_data_by_year.csv")
+defensive_use_data_year = read_csv("Cleaned Data/du_data_by_year.csv")
+defensive_use_data_month = read_csv("Cleaned Data/du_data_by_month.csv")
+
+### Later on in the analysis, i noticed that certain states simply had no 
+# instances of defensive use for certain years. As such,
+# these particular dataframes were lacking rows in those years (due to how the functions are constructed)
+# and will have to have rows with 0's entered manually.
+
+repair = defensive_use_data_month
+
+
+### First Hawaii
+hawaii = repair %>% filter(state == "Hawaii")
+hawaii_2014 = hawaii %>% filter(year == 2014)
+hawaii_2016 = hawaii %>% filter(year == 2016)
+hawaii_2015 = hawaii_2014
+hawaii_2015$year = 2015
+hawaii_2015$incidents_per_capita = 0
+hawaii_2015$injured_per_capita = 0
+hawaii_2015$killed_per_capita = 0
+hawaii_2015$n_incidents = 0
+hawaii_2015$n_injured = 0
+hawaii_2015$n_killed = 0
+hawaii_2017 = hawaii_2015
+hawaii_2017$year = 2017
+
+hawaii_new = rbind(hawaii_2014, hawaii_2015, hawaii_2016, hawaii_2017)
+
+
+##### North Dakota
+north_dakota = repair %>% filter(state == "North Dakota")
+north_dakota_2014 = north_dakota %>% filter(year == 2014)
+north_dakota_2016 = north_dakota %>% filter(year == 2016)
+north_dakota_2017 = north_dakota %>% filter(year == 2017)
+north_dakota_2015 = north_dakota_2014
+north_dakota_2015$year = 2015
+north_dakota_2015$incidents_per_capita = 0
+north_dakota_2015$injured_per_capita = 0
+north_dakota_2015$killed_per_capita = 0
+north_dakota_2015$n_incidents = 0
+north_dakota_2015$n_injured = 0
+north_dakota_2015$n_killed = 0
+#north_dakota_2017 = north_dakota_2015
+
+north_dakota_new = rbind(north_dakota_2014, north_dakota_2015, north_dakota_2016, north_dakota_2017)
+
+##### South Dakota
+south_dakota = repair %>% filter(state == "South Dakota")
+south_dakota_2015 = south_dakota %>% filter(year == 2015)
+south_dakota_2016 = south_dakota %>% filter(year == 2016)
+south_dakota_2014 = south_dakota_2015
+south_dakota_2014$year = 2014
+south_dakota_2014$incidents_per_capita = 0
+south_dakota_2014$injured_per_capita = 0
+south_dakota_2014$killed_per_capita = 0
+south_dakota_2014$n_incidents = 0
+south_dakota_2014$n_injured = 0
+south_dakota_2014$n_killed = 0
+south_dakota_2017 = south_dakota_2014
+south_dakota_2017$year = 2017
+
+south_dakota_new = rbind(south_dakota_2014, south_dakota_2015, south_dakota_2016, south_dakota_2017)
+
+repair2 = repair %>% filter(state != "Hawaii") %>% filter(state !=  "North Dakota") %>% filter(state !=  "South Dakota")
+
+repair3 = rbind(repair2, hawaii_new, north_dakota_new, south_dakota_new)
+
+# Alright, that should
+
+write_csv(repair3, "Cleaned Data/du_data_by_month.csv")
+```
+
