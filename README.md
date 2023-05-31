@@ -1,9 +1,9 @@
 # Data-Science-Exam-2023
 Data Science Exam for Asger L. Christiansen at the Master's Degree at Cognitive Science, Aarhus University, 2023.
-### DEPENDENCIES
+## Dependencies
 The present code uses pacman to load packages, and at minimum requires an installation of pacman to run. For details on package versions, see the report.
 
-# REPO STRUCTURE
+# Repo Structure
 
 ## Root directory
 The root contains all the code necessary to perform the analysis and reproduce the results, including three numbered markdowns which should be run in order if you wish to reproduce everything. However, it should be possible to skip Markdown nr. 1 and go straight to number 2, since I've put the preprocessed data in the Cleaned Data folder.
