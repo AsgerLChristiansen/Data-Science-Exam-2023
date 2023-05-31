@@ -35,7 +35,7 @@ Is meant to contain results tables (draws and summaries) of parameter recovery a
 Contains plots of parameter recovery and results.
 
 ## Pop Data
-Contains an excel sheet, compiled by hand, from data from the US census bureau.
+Contains an excel sheet containing US state population from 2013 through 2019, compiled by hand from data from the US census bureau.
 
 ## Stan Code
 Contains three stan files. These are:
